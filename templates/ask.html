@@ -1,5 +1,9 @@
 {% extends "inc/base.html" %}
 
+{% block user %}
+    {% include "inc/header_not_authorised.html" %}
+{% endblock user %}
+
 <div>
     {% block content %}
         <form class="gy-4">
@@ -12,7 +16,7 @@
                 <textarea class="form-control" id="text" rows="5"></textarea>
                 <label for="text">Your question</label>
             </div>
-            <div class="md-3 mb-3 form-floating">
+            <div class="md-3 mb-3">
                 <label for="tags">Tags</label>
                 <input type="text" class="form-control tags" id="tags">
             </div>

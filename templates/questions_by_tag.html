@@ -1,5 +1,11 @@
 {% extends "inc/base.html" %}
 
+{% block user %}
+    {% include "inc/header_authorised.html" %}
+{% endblock user %}
+
+{% load static %}
+
 <div class="pagination">
     {% block content %}
         <h3>Tag: {{ tag }}</h3>

@@ -1,5 +1,9 @@
 {% extends "inc/base.html" %}
 
+{% block user %}
+    {% include "inc/header_not_authorised.html" %}
+{% endblock user %}
+
 {% block content %}
     <h3 class="mb-5">Log In</h3>
     <div class="card p-5">

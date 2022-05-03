@@ -17,7 +17,7 @@ QUESTIONS = [
         "id": i,
         "title": f"Question {i + 1}",
         "hot": True,
-        "tags": [f"lorem ipsum", f"test"],
+        "tags": [f"lorem ipsum", f"django"],
         "text": LOREM_IPSUM,
         "img": "/img/duck.png"
     } for i in range(25)
@@ -58,7 +58,10 @@ def ask(request):
 
 
 def question(request, i: int):
+    pages, page = paginator([answer for answer in ANSWERS if QUESTIONS[i]["id"] == answer["questionId"]], request, PAGINATION_SIZE)
     content = {
+        "paginator": pages,
+        "page_content": page,
         "question": QUESTIONS[i],
         "answers": [answer for answer in ANSWERS if QUESTIONS[i]["id"] == answer["questionId"]]
     }
@@ -72,14 +75,6 @@ def tag(request, tag: str):
         "page_content": page, "tag": tag
     }
     return render(request, "questions_by_tag.html", content)
-
-def member(request, member: str):
-    pages, page = paginator([qstn for qstn in QUESTIONS if member in qstn["member"]], request, PAGINATION_SIZE)
-    content = {
-        "paginator": pages,
-        "page_content": page, "member": member
-    }
-    return render(request, "questions_by_member.html", content)
 
 
 def hot(request):
@@ -97,4 +92,7 @@ def login(request):
 
 def signup(request):
     return render(request, "registration.html")
+
+def profile(request):
+    return render(request, "profile.html")
 

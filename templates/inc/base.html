@@ -9,7 +9,8 @@
     <title>Title</title>
 </head>
 <body class="bg-light">
-    {% include "inc/header.html" %}
+    {% block user %}
+    {% endblock user %}
 
     <div class="container">
         <div style="padding-top: 6vh" class="row">
@@ -24,19 +25,18 @@
                 {% endblock %}
 
                 {% block members %}
-                <div class="members my-4">
                     <h3>Best Members</h3>
-                    {% include "inc/members.html" %}
-                </div>
+                    <div class="members row row-cols-1 my-4">{% include "inc/members.html" %}</div>
                 {% endblock %}
-
-
             </div>
+
+            <footer class="bg-light text-center text-lg-start">
+                <div class="text-center p-3">
+                  © 2022 AskMe
+                </div>
+            </footer>
         </div>
     </div>
-
-    {% block footer %}
-    {% endblock %}
 
     <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
