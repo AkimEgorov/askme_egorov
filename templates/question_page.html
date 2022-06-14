@@ -15,6 +15,10 @@
             </div>
         {% endfor %}
         <hr>
+        <div class="md-3 mb-3 form-floating">
+            <textarea class="form-control" id="text" rows="5"></textarea>
+            <label for="text">Your answer</label>
+        </div>
         <button class="btn">Answer this question</button>
         <nav class="d-flex justify-content-center nav nav-pills me-auto">
             {% for p in paginator %}
