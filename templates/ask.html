@@ -1,11 +1,9 @@
 {% extends "inc/base.html" %}
+{% load bootstrap4 %}
 
-{% block user %}
-    {% include "inc/header_not_authorised.html" %}
-{% endblock user %}
-
+<!--
 <div>
-    {% block content %}
+    
         <form class="gy-4">
             <h3>New Question</h3>
             <div class="md-3 mb-3">
@@ -24,5 +22,18 @@
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </form>
-    {% endblock %}
+    
 </div>
+-->
+
+{% block content %}
+    <h6>ASK QUESTION</h6>
+    <div class="card p-5 my-4">
+        <form action="/ask/" method="post">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            <button class="btn" type="submit">Ask!</button>
+        </form>
+    </div>
+{% endblock %}
+

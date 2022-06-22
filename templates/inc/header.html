@@ -28,17 +28,24 @@
                  <button class="btn btn-outline-success btn-header">Search</button>
              </form>
         </div>
+        {% if user.is_authenticated %}
         <div class="col-sm-12 col-md-1 d-flex justify-content-end">
           <div class="row row-cols-1 me-1">
             <div class="col">
               <a class="nav-item link-primary" href="{% url "profile" %}">Profile</a> 
             </div>
             <div class="col">
-              <a class="nav-item text-nowrap link-primary" href="#">Log out</a>
+              <a class="nav-item text-nowrap link-primary" href="{% url "logout_view" %}">Log out</a>
             </div>
           </div>
           <img style="height: 50%; width: 50%; object-fit: cover" class="img-thumbnail" src="static/img/no_avatar.png">
         </div>
+        {% else %}
+        <form class="form-inline my-2 my-lg-0">
+          <a class="btn" href="{% url "login" %}">Login In</a>
+          <a class="btn" href="{% url "signup" %}">Register</a>
+        {% endif %}
+      </form>
     </div>
 </nav>
 

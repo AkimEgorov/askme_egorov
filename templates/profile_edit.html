@@ -1,0 +1,14 @@
+{% extends "inc/base.html" %}
+{% load bootstrap4 %}
+
+{% block content %}
+    <h6>EDIT PROFILE</h6>
+    <div class="card p-5 my-4">
+        <form action="/profile/edit/" method="post">
+            {% csrf_token %}
+            {% bootstrap_form p_form %}
+            {% bootstrap_form u_form %}
+            <button class="btn" type="submit">Save</button>
+        </form>
+    </div>
+{% endblock %}
