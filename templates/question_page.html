@@ -1,8 +1,6 @@
 {% extends 'inc/base.html' %}
+{% load bootstrap4 %}
 
-{% block user %}
-    {% include "inc/header_not_authorised.html" %}
-{% endblock user %}
 
 <div class="pagination">
     {% block content %}
@@ -15,11 +13,23 @@
             </div>
         {% endfor %}
         <hr>
+        <!--
         <div class="md-3 mb-3 form-floating">
             <textarea class="form-control" id="text" rows="5"></textarea>
             <label for="text">Your answer</label>
         </div>
         <button class="btn">Answer this question</button>
+        <nav class="d-flex justify-content-center nav nav-pills me-auto">
+            {% for p in paginator %}
+                <a class="btn btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>
+            {% endfor %}
+        </nav>
+        -->
+        <form action="/questions/question{{ question.id }}/" method="post">
+            {% csrf_token %}
+            {% bootstrap_form answer_form %}
+            <button class="btn" type="submit">Answer this question</button>
+        </form>
         <nav class="d-flex justify-content-center nav nav-pills me-auto">
             {% for p in paginator %}
                 <a class="btn btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>

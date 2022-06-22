@@ -41,36 +41,22 @@ class AnswerManager(models.Manager):
 
 
 class Answer(models.Model):
-    question = models.ForeignKey('Question', related_name='answers', on_delete=models.CASCADE)
-    author = models.ForeignKey(User, related_name='answers', on_delete=models.DO_NOTHING, null=False)
+    question = models.ForeignKey('Question', related_name='answers', on_delete=models.CASCADE, default=1)
+    author = models.OneToOneField('Profile', related_name='answers', on_delete=models.CASCADE, default=1)
     content = models.TextField(blank=True)
     is_correct = models.BooleanField(default=False)
     user_rating = models.IntegerField(null=True)
 
     objects = AnswerManager()
 
-class LikeQuestion(models.Model):
-    question = models.ForeignKey('Question', related_name="like", on_delete=models.CASCADE)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.profile.user.username} {self.question.title}"
-
-
-class LikeAnswer(models.Model):
-    answer = models.ForeignKey(Answer, related_name="like", on_delete=models.CASCADE)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.profile.user.username} {self.answer.question.title}"
-
-
 class Like(models.Model):
-    user = models.ForeignKey(User, related_name='likes', on_delete=models.DO_NOTHING)
+    user = models.ForeignKey(Profile, related_name='likes', on_delete=models.CASCADE)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
 
     object_id = models.PositiveIntegerField()
     like_object = GenericForeignKey('content_type', 'object_id')
+
+
 
 
 class QuestionManager(models.Manager):
@@ -98,7 +84,7 @@ class QuestionManager(models.Manager):
 class Question(models.Model):
     title = models.CharField(max_length=TITLE_LENGTH, blank=True)
     content = models.CharField(max_length=CONTENT_LENGTH, blank=True)
-    author = models.ForeignKey(User, related_name='questions', null=False, on_delete=models.DO_NOTHING)
+    author = models.ForeignKey(Profile, related_name='questions', null=False, on_delete=models.CASCADE)
     published_date = models.DateTimeField(blank=True, auto_now=True)
     number_of_answers = models.IntegerField(null=True)
     tags = models.ManyToManyField(Tag, related_name='questions')

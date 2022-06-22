@@ -1,10 +1,9 @@
 {% extends "inc/base.html" %}
+{% load bootstrap4 %}
 
-{% block user %}
-    {% include "inc/header_not_authorised.html" %}
-{% endblock user %}
 
-{% block content %}
+<!--
+
     <h3 class="mb-5">Log In</h3>
     <div class="card p-5">
         <form class="form">
@@ -24,4 +23,17 @@
             <a style="font-size: 12px; color:#575656; text-decoration: none; margin-left: 16px" href="{% url "index" %}">Return to questions</a>
         </form>
     </div>
+
+-->
+
+{% block content %}
+    <h3 class="mb-5">Log In</h3>
+    <div class="card p-5">
+        <form action="/login/" method="post">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            <button class="btn" type="submit">Login</button>
+        </form>
+    </div>
 {% endblock %}
+
