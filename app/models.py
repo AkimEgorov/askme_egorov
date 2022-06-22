@@ -3,7 +3,7 @@ from random import random, randint
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-#from coolname import generate_slug
+from coolname import generate_slug
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -35,17 +35,38 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+class AnswerManager(models.Manager):
+    def get_answer_by_question(self, question_id: int):
+        return self.filter(question_id=question_id)
+
 
 class Answer(models.Model):
-    question = models.ForeignKey('Question', related_name='answers', on_delete=models.CASCADE, default=1)
-    author = models.ForeignKey(Profile, related_name='answers', on_delete=models.CASCADE, default=1)
+    question = models.ForeignKey('Question', related_name='answers', on_delete=models.CASCADE)
+    author = models.ForeignKey(User, related_name='answers', on_delete=models.DO_NOTHING, null=False)
     content = models.TextField(blank=True)
     is_correct = models.BooleanField(default=False)
     user_rating = models.IntegerField(null=True)
 
+    objects = AnswerManager()
+
+class LikeQuestion(models.Model):
+    question = models.ForeignKey('Question', related_name="like", on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.profile.user.username} {self.question.title}"
+
+
+class LikeAnswer(models.Model):
+    answer = models.ForeignKey(Answer, related_name="like", on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.profile.user.username} {self.answer.question.title}"
+
 
 class Like(models.Model):
-    user = models.ForeignKey(Profile, related_name='likes', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='likes', on_delete=models.DO_NOTHING)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
 
     object_id = models.PositiveIntegerField()
@@ -72,10 +93,12 @@ class QuestionManager(models.Manager):
         return self.filter(answers__author__questions=question_id)
 
 
+
+
 class Question(models.Model):
     title = models.CharField(max_length=TITLE_LENGTH, blank=True)
     content = models.CharField(max_length=CONTENT_LENGTH, blank=True)
-    author = models.ForeignKey(Profile, related_name='questions', on_delete=models.CASCADE, default=1)
+    author = models.ForeignKey(User, related_name='questions', null=False, on_delete=models.DO_NOTHING)
     published_date = models.DateTimeField(blank=True, auto_now=True)
     number_of_answers = models.IntegerField(null=True)
     tags = models.ManyToManyField(Tag, related_name='questions')
@@ -84,3 +107,8 @@ class Question(models.Model):
 
     def __str__(self):
         return self.title
+    
+    def get_question_answer(self):
+        return self.answers
+
+
