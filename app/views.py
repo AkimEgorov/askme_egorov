@@ -1,4 +1,5 @@
 from urllib import request
+
 from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -6,7 +7,7 @@ from django.core.paginator import Paginator
 from django.views.generic import ListView
 
 from .models import Question, Answer, Profile, Tag
-
+from .forms import LoginForm, SignUpForm, ProfileEdit, UserEdit, QuestionForm, AnswerForm
 
 # Create your views here.
 
