@@ -6,6 +6,9 @@ from django.contrib.auth.hashers import make_password
 from coolname import generate_slug
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.utils.timezone import now
 
 TITLE_LENGTH = 1024
 CONTENT_LENGTH = 65536
@@ -16,90 +19,130 @@ NUMBER_OF_QUESTIONS = 200
 NUMBER_OF_ANSWERS = 2000
 NUMBER_OF_TAGS = 20
 
-LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque tempor id risus vel facilisis. Nunc " \
-              "commodo non orci a mattis. Fusce nulla erat, mollis non ipsum ac, finibus accumsan ligula. Nam et " \
-              "nulla eget neque consequat imperdiet. Ut pharetra odio aliquam lacinia lacinia. Curabitur non dui sed " \
-              "est finibus tempor nec vitae dui. Donec fermentum leo arcu, nec finibus mi pretium nec. Proin finibus " \
-              "semper purus vel convallis. Quisque eget fermentum dui. Morbi sollicitudin sit amet odio eget " \
-              "dignissim. Curabitur nec nisi hendrerit neque rhoncus egestas at quis tellus. Pellentesque quam sem, " \
-              "elementum eu sapien a, iaculis cursus lectus. Etiam ut nulla vel est ultricies fringilla. Maecenas " \
-              "pretium ultricies nibh, efficitur cursus ante volutpat sit amet. "
-
-
-# Create your models here.
-class TagManager(models.Manager):
-    pass
-
 
 class Tag(models.Model):
-    tag = models.CharField(max_length=TAG_LENGTH, blank=True)
-    objects = TagManager()
+    title = models.CharField(max_length=64, verbose_name="Tag")
 
-
-class ProfileManager(models.Manager):
-    pass
+    def __str__(self):
+        return self.title
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    avatar = models.ImageField(upload_to='images', null=True)
-    bio = models.TextField(null=True)
-    questions = models.ForeignKey('Question', on_delete=models.CASCADE)
+    avatar = models.ImageField(null=True, blank=True, default='panda.png', upload_to='avatar/%Y/%m/%d/')
+    bio = models.TextField(null=True, blank=True)
 
-    objects = ProfileManager()
+    def __str__(self):
+        return self.user.username
+
 
 class AnswerManager(models.Manager):
-    pass
+    def get_answer_by_question(self, question_id: int):
+        return self.filter(question_id=question_id)
 
 
 class Answer(models.Model):
-    question = models.ForeignKey('Question', on_delete=models.CASCADE)
-    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    question = models.ForeignKey('Question', related_name='answers', on_delete=models.CASCADE)
+    author = models.OneToOneField('Profile', related_name='answers', on_delete=models.CASCADE)
     content = models.TextField(blank=True)
-    user_rating = models.IntegerField(null=True)
+    is_correct = models.BooleanField(default=False)
 
     objects = AnswerManager()
 
+    def __str__(self):
+        return self.content
+
+    def likes(self):
+        return LikeAnswer.objects.filter(answer_id=self.id).count()
+
+    def like(self, profile):
+        like = LikeAnswer.objects.filter(answer_id=self.id, profile=profile)
+        if like:
+            like.delete()
+        else:
+            like = LikeAnswer(answer_id=self.id, profile=profile)
+            like.save()
+
+    def set_correct_answer(self):
+        self.is_correct = True
+        self.save()
+
+    def set_not_correct_answer(self):
+        self.is_correct = False
+        self.save()
+
 
 class QuestionManager(models.Manager):
-    def get_tags(self, question_id: int):
-        return Tag.objects.filter(question_id=question_id).all().values()
+    def all(self):
+        return self.order_by('published_date')
 
-    def get_hot(self):
-        return self.filter(hot=True)
+    def hot(self):
+        return self.order_by('likes')
 
     def get_popular(self):
-        return self.filter(number_of_answers=10)
+        return self.filter(likes__gt=10)
+
+    def get_recent(self):
+        return self.filter(published_date__gt=now())
 
     def get_question_by_id(self, question_id):
         return self.filter(id=question_id)
 
     def get_questions_by_user_id(self, user_id):
-        return Profile.objects.filter(id=user_id)
+        return self.filter(author__user=user_id)
 
-    def get_questionos_by_tag(self, tag: str):
-        return self.get_tag
-
-    def get_questions_tags(self, question_id: int):
-        return Tag.objects.filter(question_id=question_id)
+    def get_questions_by_tag_title(self, title):
+        return self.filter(tags__title=title)
 
     def get_question_answers(self, question_id: int):
-        return Answer.objects.filter(question_id=question_id)
+        return self.filter(author__answers__question_id=question_id)
 
 
 class Question(models.Model):
-    title = models.CharField(max_length=TITLE_LENGTH, blank=True)
-    content = models.CharField(max_length=CONTENT_LENGTH, blank=True)
-    tags = models.ForeignKey(Tag, on_delete=models.DO_NOTHING)
-    hot = models.BooleanField()
-    published_date = models.DateTimeField()
-    number_of_answers = models.IntegerField(null=True)
-
-    # user_rating = models.IntegerField(len(list(Answer.question.id=id))
+    title = models.CharField(max_length=TITLE_LENGTH, blank=False)
+    content = models.CharField(max_length=CONTENT_LENGTH, blank=False)
+    author = models.ForeignKey(Profile, related_name='questions', on_delete=models.CASCADE)
+    published_date = models.DateTimeField(blank=True, auto_now=True)
+    tags = models.ManyToManyField(Tag, related_name='questions')
 
     objects = QuestionManager()
 
     def __str__(self):
         return self.title
 
+    def get_question_answer(self):
+        return self.answers
 
+    def likes(self):
+        return LikeQuestion.objects.filter(question_id=self.id).count()
+
+    def like(self, profile: Profile):
+        like = LikeQuestion.objects.filter(question_id=self.id, profile=profile)
+        if like:
+            like.delete()
+        else:
+            like = LikeQuestion(question_id=self.id, profile=profile)
+            like.save()
+
+    def number_of_answers(self):
+        return Answer.objects.filter(question_id=self.id).count()
+
+    def get_author_username(self):
+        return self.author.user.username
+
+
+class LikeQuestion(models.Model):
+    question = models.ForeignKey(Question, related_name="like", on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    tests = models.CharField(default="test", max_length=123)
+
+    def __str__(self):
+        return f"{self.profile.user.username} {self.question.title}"
+
+
+class LikeAnswer(models.Model):
+    answer = models.ForeignKey(Answer, related_name="like", on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.profile.user.username} {self.answer.question.title}"
