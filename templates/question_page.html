@@ -1,65 +1,31 @@
 {% extends 'inc/base.html' %}
 {% load bootstrap4 %}
+{% load static %}
 
-
-<div class="pagination">
+<div>
     {% block content %}
-        <h3>{{ question.title }}</h3>
-        <div class="my-4">{% include "inc/question.html" %}</div>
-        <h3>Answers</h3>
+        <h6>QUESTION</h6>
+        <div class="my-4">
+            <h1>{{ question.title }}</h1>
+            <p>{{ question.content }}</p>
+        </div>
+        <form action="/questions/question{{ question.id }}/" method="post">
+            {% csrf_token %}
+            {% bootstrap_form answer_form %}
+            <button class="btn btn-primary my-4" type="submit">Answer this question</button>
+        </form>
+        <h6>ANSWERS: {{ question.number_of_answers }}</h6>
         {% for answer in page_content.object_list %}
             <div class="my-4">
                 {% include "inc/answer.html" %}
             </div>
         {% endfor %}
         <hr>
-        <!--
-        <div class="md-3 mb-3 form-floating">
-            <textarea class="form-control" id="text" rows="5"></textarea>
-            <label for="text">Your answer</label>
-        </div>
-        <button class="btn">Answer this question</button>
         <nav class="d-flex justify-content-center nav nav-pills me-auto">
             {% for p in paginator %}
-                <a class="btn btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>
+                <a class="btn btn-toolbar btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>
             {% endfor %}
         </nav>
-        -->
-        <form action="/questions/question{{ question.id }}/" method="post">
-            {% csrf_token %}
-            {% bootstrap_form answer_form %}
-            <button class="btn" type="submit">Answer this question</button>
-        </form>
-        <nav class="d-flex justify-content-center nav nav-pills me-auto">
-            {% for p in paginator %}
-                <a class="btn btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>
-            {% endfor %}
-        </nav>
+        <script src="{% static 'js/set_answer.js' %} "></script>
     {% endblock %}
 </div>
-
-
-<!--
-<div>
-    
-        <h6>QUESTION</h6>
-        <div class="my-4">
-            <h1>{{ question.title }}</h1>
-            <p>{{ question.content }}</p>
-        </div>
-        <h6>ANSWERS: {{ question.number_of_answers }}</h6>
-        {% for answer in page_content %}
-            <div class="my-4">
-                {% include "inc/answer.html" %}
-            </div>
-        {% endfor %}
-        <hr>
-        <button class="btn">Answer this question</button>
-        <nav class="d-flex justify-content-center nav nav-pills me-auto">
-            {% for p in paginator %}
-                <a class="btn btn-nav me-2" href="?page={{ p.number }}">{{ p.number }}</a>
-            {% endfor %}
-        </nav>
-    
-</div>
--->

@@ -1,25 +1,30 @@
 {% load static %}
 
 <div style="border: none; border-radius: 16px" class="col-12 card">
-    <div class="row p-3">
-        <div class="col-md-2">
-            <img style="height: 0; padding-bottom: 100%; width: 100%; object-fit: cover" class="img-thumbnail avatar" src="{% static answer.img %}">
-            <div class="my-4">
-                    <div class="col-sm-20 col-md-15 d-flex justify-content-center align-items-center">
-                        <button class="btn btn-primary" type="submit">&#128077 5</button>
-                        <button class="btn btn-primary" type="submit">&#128078 1</button>
-                    </div>
-            </div>
+
+    <div class="row px-4 py-4">
+        <div class="d-flex flex-row align-items-center">
+            <img style="height: 24px; width: 24px; border-radius: 8px" class="avatar" src="{{ answer.author.avatar.url }}">
+            <h6 class="my-2 mx-3">{{ answer.author.user.first_name }} {{ answer.author.user.last_name }}</h6>
         </div>
-        <div class="answer card-body col-md-6">
-            <h4>{{ answer.author.user.first_name }} {{ answer.author.user.last_name }}</h4>
-            <p>{{ answer.content }}</p>
-            <div class="my-4">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-                    <label class="form-check-label" for="flexCheckDefault">
-                      Correct!
-                    </label>
+        <p class="my-2">{{ answer.content }}</p>
+        <hr>
+        <div class="col-12 d-flex justify-content-between align-items-end">
+            <button type="submit" class="btn btn-light btn-like">{{ question.get_number_of_likes }}<img src="{% static "icons/arrow-up-circle.svg" %}" width="16" height="16" style="margin-right: 8px">vote</button>
+            {% if answer.is_correct %}
+                <h6 style="opacity: 1" id="correct{{ answer.id }}" style="font-size: 12px; font-weight: bold">Correct!</h6>
+            {% else %}
+                <h6 style="opacity: 0" id="correct{{ answer.id }}" style="font-size: 12px; font-weight: bold">Correct!</h6>
+            {% endif %}
+            {% if answer.question.author.user == user %}
+            <div>
+                {% if answer.is_correct %}
+                    <button data-id="{{ answer.id }}" style="font-size: 12px; font-weight: bold" class="btn btn-primary set-wrong" type="button">Set as wrong answer</button>
+                {% else %}
+                    <button data-id="{{ answer.id }}" style="font-size: 12px; font-weight: bold" class="btn btn-primary set-wright" type="button">Set as wright answer</button>
+                {% endif %}
             </div>
+        {% endif %}
         </div>
     </div>
 </div>

@@ -2,16 +2,18 @@ from urllib import request
 
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 
-from .models import Question, Answer, Profile, Tag
+from .models import Question, Answer, Profile, Tag, LikeQuestion, LikeAnswer
 from .forms import LoginForm, SignUpForm, ProfileEdit, UserEdit, QuestionForm, AnswerForm
 
 # Create your views here.
@@ -26,13 +28,14 @@ def paginator(objects_list, request, per_page=20):
 
     return pages, page
 
+
 def make_content(objects_list, request, per_page=20):
     pages, page = paginator(objects_list, request, per_page)
 
     content = {
         "paginator": pages,
         "page_content": page,
-        "tags": Tag.objects.all().values()[:20]
+        "tags": Tag.objects.all().values()[:100]
     }
 
     return content
@@ -60,7 +63,10 @@ def signup(request):
     elif request.method == 'POST':
         user_form = SignUpForm(data=request.POST)
         if user_form.is_valid():
-            user = User.objects.create_user(username=user_form.cleaned_data['username'],
+            # TODO: обновить ДЗ 4
+            user = User.objects.create_user(first_name=user_form.cleaned_data['first_name'],
+                                            last_name=user_form.cleaned_data['last_name'],
+                                            username=user_form.cleaned_data['username'],
                                             email=user_form.cleaned_data['email'],
                                             password=user_form.cleaned_data['password'],
                                             )
@@ -81,7 +87,9 @@ def logout_view(request):
 
 
 def index(request):
-    return render(request, "index.html", make_content(Question.objects.all().values(), request))
+    return render(request, "index.html", make_content(Question.objects.all().
+                                                      annotate(answers_count=Count('answers')), request))
+
 
 @login_required(redirect_field_name="login")
 def profile(request):
@@ -95,7 +103,7 @@ def profile_edit(request):
         u_form = UserEdit(instance=request.user)
 
     elif request.method == 'POST':
-        p_form = ProfileEdit(data=request.POST, instance=request.user.profile)
+        p_form = ProfileEdit(data=request.POST, instance=request.user.profile, files=request.FILES)
         u_form = UserEdit(data=request.POST, instance=request.user)
         if p_form.is_valid() and u_form.is_valid():
             u_form.instance.save()
@@ -113,6 +121,7 @@ def profile_edit(request):
     }
 
     return render(request, "profile_edit.html", content)
+
 
 # @login_required(redirect_field_name=reverse('login'))
 def ask(request):
@@ -195,7 +204,6 @@ def question(request, i: int):
 
 
 def tag(request, title: str):
-    # content = make_content(Tag.objects.get_questions_by_tag(title).values(), request)
     content = make_content(Question.objects.get_questions_by_tag_title(title).values(), request)
     return render(request, "index.html", content)
 
@@ -203,13 +211,55 @@ def tag(request, title: str):
 def hot(request):
     return render(request, "index.html", make_content(list(Question.objects.get_popular()), request))
 
-'''
-def login(request):
-    return render(request, "login.html")
 
-def signup(request):
-    return render(request, "registration.html")
+@login_required
+@require_POST
+def like_question(request):
+    question_id = request.POST['question_id']
+    like = LikeQuestion.objects.filter(question_id=question_id, profile=request.user.profile)
+    if not like:
+        like = LikeQuestion(question_id=question_id, profile=request.user.profile)
+        like.save()
 
-def profile(request):
-    return render(request, "profile.html")
-'''
+    question = Question.objects.get(id=question_id)
+    print(question_id)
+    print(question.likes())
+    return JsonResponse({'new_rating': question.likes() })
+
+
+@login_required
+@require_POST
+def like_answer(request):
+    answer_id = request.POST['answer_id']
+    like = LikeAnswer.objects.get(id=answer_id)
+    if not like:
+        like = LikeAnswer.objects.create(answer_id=answer_id, profile=request.user.profile)
+        like.save()
+
+    answer = Answer.objects.get(id=answer_id)
+    return JsonResponse({'new_rating': answer.likes()})
+
+
+@login_required
+@require_POST
+def set_wright_answer(request):
+    answer_id = request.POST['answer_id']
+    answer = Answer.objects.get(id=answer_id)
+
+    if answer.question.author == request.user.profile:
+        answer.set_correct_answer()
+
+    return JsonResponse({'new_status': answer.is_correct})
+
+
+@login_required
+@require_POST
+def set_wrong_answer(request):
+    answer_id = request.POST['answer_id']
+    answer = Answer.objects.get(id=answer_id)
+
+    if answer.question.author == request.user.profile:
+        answer.set_not_correct_answer()
+
+    return JsonResponse({'new_status': answer.is_correct})
+
