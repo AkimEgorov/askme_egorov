@@ -1,39 +1,16 @@
 from urllib import request
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.views.generic import ListView
 
+from .models import Question, Answer, Profile, Tag
+
 
 # Create your views here.
 
 PAGINATION_SIZE = 10
-
-LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque tempor id risus vel facilisis. Nunc commodo non orci a mattis. Fusce nulla erat, mollis non ipsum ac, finibus accumsan ligula. Nam et nulla eget neque consequat imperdiet. Ut pharetra odio aliquam lacinia lacinia. Curabitur non dui sed est finibus tempor nec vitae dui. Donec fermentum leo arcu, nec finibus mi pretium nec. Proin finibus semper purus vel convallis. Quisque eget fermentum dui. Morbi sollicitudin sit amet odio eget dignissim. Curabitur nec nisi hendrerit neque rhoncus egestas at quis tellus. Pellentesque quam sem, elementum eu sapien a, iaculis cursus lectus. Etiam ut nulla vel est ultricies fringilla. Maecenas pretium ultricies nibh, efficitur cursus ante volutpat sit amet. "
-
-QUESTIONS = [
-    {
-        "id": i,
-        "title": f"Question {i + 1}",
-        "hot": True,
-        "tags": [f"lorem ipsum", f"django"],
-        "text": LOREM_IPSUM,
-        "img": "/img/duck.png"
-    } for i in range(25)
-]
-
-ANSWERS = [
-    {
-        "id": i,
-        "user": "Akim Egorov",
-        "content": LOREM_IPSUM,
-        "questionId": i,
-        "img": "/img/img.jpg"
-    } for i in range(25)
-]
-
-TAGS = [f"tag {i}" for i in range(50)]
 
 
 def paginator(objects_list, request, per_page=20):
@@ -43,14 +20,19 @@ def paginator(objects_list, request, per_page=20):
 
     return pages, page
 
+def make_content(objects_list, request, per_page=20):
+    pages, page = paginator(objects_list, request, per_page)
 
-def index(request):
-    pages, page = paginator(QUESTIONS, request, PAGINATION_SIZE)
     content = {
         "paginator": pages,
         "page_content": page,
+        "tags": Tag.objects.all().values()[:20]
     }
-    return render(request, "index.html", {"paginator": pages, "page_content": page})
+
+    return content
+
+def index(request):
+    return render(request, "index.html", make_content(Question.objects.all().values(), request))
 
 
 def ask(request):
@@ -58,37 +40,29 @@ def ask(request):
 
 
 def question(request, i: int):
-    pages, page = paginator([answer for answer in ANSWERS if QUESTIONS[i]["id"] == answer["questionId"]], request, PAGINATION_SIZE)
-    content = {
-        "paginator": pages,
-        "page_content": page,
-        "question": QUESTIONS[i],
-        "answers": [answer for answer in ANSWERS if QUESTIONS[i]["id"] == answer["questionId"]]
-    }
+    try:
+        qstn = Question.objects.get_question_by_id(i).values()
+    except Question.DoesNotExist:
+        return HttpResponseNotFound("<html><h1>404 Page Not Found:(</h1></html>")
+
+    content = make_content(Answer.objects.get_answer_by_question(i), request)
+    content["question"] = qstn[0]
+
     return render(request, "question_page.html", content)
 
 
-def tag(request, tag: str):
-    pages, page = paginator([qstn for qstn in QUESTIONS if tag in qstn["tags"]], request, PAGINATION_SIZE)
-    content = {
-        "paginator": pages,
-        "page_content": page, "tag": tag
-    }
-    return render(request, "questions_by_tag.html", content)
+def tag(request, title: str):
+    # content = make_content(Tag.objects.get_questions_by_tag(title).values(), request)
+    content = make_content(Question.objects.get_questions_by_tag_title(title).values(), request)
+    return render(request, "index.html", content)
 
 
 def hot(request):
-    pages, page = paginator(QUESTIONS[:25], request, PAGINATION_SIZE)
-    content = {
-        "paginator": pages,
-        "page_content": page, "tag": tag
-    }
-    return render(request, "index.html", content)
+    return render(request, "index.html", make_content(list(Question.objects.get_popular()), request))
 
 
 def login(request):
     return render(request, "login.html")
-
 
 def signup(request):
     return render(request, "registration.html")
